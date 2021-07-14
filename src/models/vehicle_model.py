@@ -1,7 +1,9 @@
 # based on https://gist.github.com/nbassler/342fc56c42df27239fa5276b79fca8e6
 
 from PyQt5 import QtCore
+from stanag4586edav1.message21 import Message21
 from .vehicle_node import VehicleNode
+from .payload_node import PayloadNode
 import logging
 
 from stanag4586vsm.stanag_server import *
@@ -98,5 +100,14 @@ class VehicleModel(QtCore.QAbstractItemModel):
         #for poc purposes we have just one vehicle
         #we check if it's not already controlled by us, then we request for it to be controlled
         for veh_id in discovered_vehicles.keys():
+            
+            # temporary - send control request to the vehicle, will remove once context menus are introduced
             if discovered_vehicles[veh_id][EntityController.KEY_CONTROLLED] is False:
                 controller.control_request(0x0, veh_id)
+
+            if discovered_vehicles[veh_id][EntityController.KEY_TYPE] == Message21.VEHICLE_TYPE_UGV:
+                if False == self.__root_node_ugv.hasChild(veh_id):
+                    call_sign = discovered_vehicles[veh_id][EntityController.KEY_META][EntityController.KEY_CALL_SIGN]
+                    self.__root_node_ugv.addChild(VehicleNode((veh_id, call_sign)))
+
+        self.layoutChanged.emit()
