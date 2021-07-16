@@ -63,20 +63,21 @@ class MainWindow(MainWindowUI, MainWindowBase):
         self.__model_vehicles = VehicleModel(stanag_server)
 
         # create other dock widgets
-        file_tree = QTreeView()
-        file_tree.setFrameShape(QFrame.NoFrame)
-        
-        # file_model = QFileSystemModel(file_tree)
-        # file_model.setRootPath(QDir.currentPath())
-        # file_tree.setModel(file_model)
+        vehicles_tree = QTreeView()
+        vehicles_tree.setFrameShape(QFrame.NoFrame)
 
-        file_tree.setModel(self.__model_vehicles)
+        self.__model_vehicles.setOwingTreeWidget(vehicles_tree)
+        vehicles_tree.setContextMenuPolicy(Qt.CustomContextMenu)
+        vehicles_tree.customContextMenuRequested.connect(self.__model_vehicles.contextMenuRequested)
+
+        vehicles_tree.setModel(self.__model_vehicles)
         data_dock_widget = QtAds.CDockWidget("File system")
-        data_dock_widget.setWidget(file_tree)
+        data_dock_widget.setWidget(vehicles_tree)
         data_dock_widget.resize(150, 250)
         data_dock_widget.setMinimumSize(100, 250)
         file_area = self.dock_manager.addDockWidget(QtAds.DockWidgetArea.LeftDockWidgetArea, data_dock_widget, central_dock_area)
         self.menuView.addAction(data_dock_widget.toggleViewAction())
+        
 
         # table = QTableWidget()
         # table.setColumnCount(3)

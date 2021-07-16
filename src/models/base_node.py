@@ -2,6 +2,7 @@
 
 
 class BaseNode(object):
+
     def __init__(self, data):
         self._data = data
         if type(data) == tuple:
@@ -44,9 +45,9 @@ class BaseNode(object):
 
     def hasChild(self, child_id):
         """Checks to see if child_id is contained in the _children member"""
-        """Returns True if child is found, False otherwise"""
-        for v in self._children:
-            if v[0] == child_id:
-                return True
+        """Returns Child instance if child is found, None otherwise"""
+        for c in self._children:
+            if c._data[0] == child_id:
+                return c
 
-        return False
+        return None
