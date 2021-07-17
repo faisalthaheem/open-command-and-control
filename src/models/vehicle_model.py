@@ -132,8 +132,8 @@ class VehicleModel(QtCore.QAbstractItemModel):
         for veh_id in discovered_vehicles.keys():
             
             # temporary - send control request to the vehicle, will remove once context menus are introduced
-            if discovered_vehicles[veh_id][EntityController.KEY_CONTROLLED] is False:
-                controller.control_request(0x0, veh_id)
+            # if discovered_vehicles[veh_id][EntityController.KEY_CONTROLLED] is False:
+            #     controller.control_request(0x0, veh_id)
 
             if discovered_vehicles[veh_id][EntityController.KEY_TYPE] == Message21.VEHICLE_TYPE_UGV:
                 
@@ -188,14 +188,56 @@ class VehicleModel(QtCore.QAbstractItemModel):
         node = self.getSelectedNode()
         if node is None: return
 
-        # if type(node) == EoStationNode:
-        #     self.startTimer
+        if type(node) == EoStationNode:
+            station_id = node._data[0]
+            vehicle_id = node._parent._data[0]
+            self.__stanag_server.get_entity_controller().monitor_request(station_id, vehicle_id)
+        
+        elif type(node) == VehicleNode:
+            vehicle_id = node._data[0]
+            self.__stanag_server.get_entity_controller().monitor_request(0, vehicle_id)
 
     def requestControl(self, qa):
         self.__logger.debug("requestControl")
 
+        node = self.getSelectedNode()
+        if node is None: return
+
+        if type(node) == EoStationNode:
+            station_id = node._data[0]
+            vehicle_id = node._parent._data[0]
+            self.__stanag_server.get_entity_controller().control_request(station_id, vehicle_id)
+        
+        elif type(node) == VehicleNode:
+            vehicle_id = node._data[0]
+            self.__stanag_server.get_entity_controller().control_request(0, vehicle_id)
+
     def requestDisconnectMonitor(self, qa):
         self.__logger.debug("requestDisconnectMonitor")
 
+        node = self.getSelectedNode()
+        if node is None: return
+
+        if type(node) == EoStationNode:
+            station_id = node._data[0]
+            vehicle_id = node._parent._data[0]
+            self.__stanag_server.get_entity_controller().monitor_release(station_id, vehicle_id)
+        
+        elif type(node) == VehicleNode:
+            vehicle_id = node._data[0]
+            self.__stanag_server.get_entity_controller().monitor_release(0, vehicle_id)
+
     def requestDisconnectControl(self, qa):
         self.__logger.debug("requestDisconnectControl")
+
+        node = self.getSelectedNode()
+        if node is None: return
+
+        if type(node) == EoStationNode:
+            station_id = node._data[0]
+            vehicle_id = node._parent._data[0]
+            self.__stanag_server.get_entity_controller().control_release(station_id, vehicle_id)
+
+        elif type(node) == VehicleNode:
+            vehicle_id = node._data[0]
+            self.__stanag_server.get_entity_controller().control_release(0, vehicle_id)
