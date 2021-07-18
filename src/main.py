@@ -78,29 +78,6 @@ class MainWindow(MainWindowUI, MainWindowBase):
         file_area = self.dock_manager.addDockWidget(QtAds.DockWidgetArea.LeftDockWidgetArea, data_dock_widget, central_dock_area)
         self.menuView.addAction(data_dock_widget.toggleViewAction())
         
-
-        # table = QTableWidget()
-        # table.setColumnCount(3)
-        # table.setRowCount(10)
-        # table_dock_widget = QtAds.CDockWidget("Table")
-        # table_dock_widget.setWidget(table)
-        # table_dock_widget.setMinimumSizeHintMode(QtAds.CDockWidget.MinimumSizeHintFromDockWidget)
-        # table_dock_widget.resize(250, 150)
-        # table_dock_widget.setMinimumSize(200, 150)
-        # self.dock_manager.addDockWidget(QtAds.DockWidgetArea.BottomDockWidgetArea, table_dock_widget, file_area)
-        # self.menuView.addAction(table_dock_widget.toggleViewAction())
-
-        # properties_table = QTableWidget()
-        # properties_table.setColumnCount(3)
-        # properties_table.setRowCount(10)
-        # properties_dock_widget = QtAds.CDockWidget("Properties")
-        # properties_dock_widget.setWidget(properties_table)
-        # properties_dock_widget.setMinimumSizeHintMode(QtAds.CDockWidget.MinimumSizeHintFromDockWidget)
-        # properties_dock_widget.resize(250, 150)
-        # properties_dock_widget.setMinimumSize(200,150)
-        # self.dock_manager.addDockWidget(QtAds.DockWidgetArea.RightDockWidgetArea, properties_dock_widget, central_dock_area)
-        # self.menuView.addAction(properties_dock_widget.toggleViewAction())
-        
         self.create_perspective_ui()
         
     def create_perspective_ui(self):

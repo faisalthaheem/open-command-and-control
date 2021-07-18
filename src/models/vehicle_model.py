@@ -1,12 +1,14 @@
 # based on https://gist.github.com/nbassler/342fc56c42df27239fa5276b79fca8e6
 
 from PyQt5 import QtCore
-from PyQt5.QtGui import QCursor
+from PyQt5 import QtGui
+from PyQt5.QtGui import QColor, QCursor, QIcon
 from PyQt5.QtWidgets import QAction, QMenu
 from stanag4586edav1.message21 import Message21
 from models.base_node import BaseNode
 
 from models.eo_station_node import EoStationNode
+from models.station_node import StationNode
 from .vehicle_node import VehicleNode
 import logging
 
@@ -119,7 +121,27 @@ class VehicleModel(QtCore.QAbstractItemModel):
             return None
         node = index.internalPointer()
         if role == QtCore.Qt.DisplayRole:
-            return node.data(index.column())
+
+            if type(node) not in [VehicleNode, EoStationNode]:
+                return node.data(index.column())
+
+            if index.column() > 0:
+                return node.data(index.column())
+            else:
+                text = node.data(index.column())
+                if node.isControlled():
+                    text = "++" + str(text)
+                elif node.isMonitored():
+                    text = "+" + str(text)
+                
+                return text
+
+        if (role==QtCore.Qt.BackgroundColorRole) and (type(node) in [VehicleNode, EoStationNode]):
+            if node.isControlled():
+                return QtGui.QBrush(QtCore.Qt.green)
+            elif node.isMonitored():
+                return QtGui.QBrush(QtCore.Qt.yellow)
+
         return None
     
     def handle_vehicle_discovery(self, controller, vehicles):
