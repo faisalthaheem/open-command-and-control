@@ -50,4 +50,10 @@ class VehicleNode(StationNode):
             return EoStationNode((station_id, "EO"), station_data[EntityController.KEY_TYPE], self._stanag_server)
 
     def processConfigResponse(self, msg):
-        pass    
+        pass
+
+    def getContextMenuText(self):
+        return "Open Drive Controls"
+
+    def handleContextMenu(self):
+        self._logger.debug("Drive controls not implemented")

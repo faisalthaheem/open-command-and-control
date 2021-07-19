@@ -65,18 +65,20 @@ class VehicleModel(QtCore.QAbstractItemModel):
         self.__action_req_mon = QAction("Request Monitor", self)
         self.__action_req_dis_ctrl = QAction("Release Control", self)
         self.__action_req_dis_mon = QAction("Release Monitor", self)
+        self.__action_node_specific = QAction("", self)
 
         self.__action_req_ctrl.triggered.connect(self.requestControl)
         self.__action_req_mon.triggered.connect(self.requestMonitor)
         self.__action_req_dis_ctrl.triggered.connect(self.requestDisconnectControl)
         self.__action_req_dis_mon.triggered.connect(self.requestDisconnectMonitor)
-
+        self.__action_node_specific.triggered.connect(self.nodeSpecificActionRequested)
 
         self.__cntx_menu = QMenu()
         self.__cntx_menu.addAction(self.__action_req_ctrl)
         self.__cntx_menu.addAction(self.__action_req_mon)
         self.__cntx_menu.addAction(self.__action_req_dis_ctrl)
         self.__cntx_menu.addAction(self.__action_req_dis_mon)
+        self.__cntx_menu.addAction(self.__action_node_specific)
 
     def rowCount(self, index):
         if index.isValid():
@@ -220,8 +222,32 @@ class VehicleModel(QtCore.QAbstractItemModel):
         node = self.getSelectedNode()
         if node is None: return
         
-        if type(node) == EoStationNode or type(node) == VehicleNode:
+        if type(node) in [EoStationNode, VehicleNode]:
             self.__logger.debug("Station node clicked")
+
+            self.__action_node_specific.setText(node.getContextMenuText())
+
+            #enable/disable actions
+            if node.isControlled():
+                self.__action_req_ctrl.setEnabled(False)
+                self.__action_req_dis_ctrl.setEnabled(True)
+                #controls are allowed only when controlling the station
+                self.__action_node_specific.setEnabled(True)
+            else:
+                self.__action_req_ctrl.setEnabled(True)
+                self.__action_req_dis_ctrl.setEnabled(False)
+                #controls are allowed only when controlling the station
+                self.__action_node_specific.setEnabled(False)
+
+
+            if node.isMonitored():
+                self.__action_req_mon.setEnabled(False)
+                self.__action_req_dis_mon.setEnabled(True)
+            else:
+                self.__action_req_mon.setEnabled(True)
+                self.__action_req_dis_mon.setEnabled(False)
+
+
             self.__cntx_menu.exec_(QCursor.pos())
 
     def getSelectedNode(self):            
@@ -295,3 +321,11 @@ class VehicleModel(QtCore.QAbstractItemModel):
         elif type(node) == VehicleNode:
             vehicle_id = node._data[0]
             self.__stanag_server.get_entity_controller().control_release(0, vehicle_id)
+
+    def nodeSpecificActionRequested(self, qa):
+        
+        node = self.getSelectedNode()
+        if node is None: return
+        
+        if type(node) in [EoStationNode, VehicleNode]:
+            node.handleContextMenu()

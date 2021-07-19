@@ -35,6 +35,14 @@ class StationNode(BaseNode, ABC):
         return self._station_type
 
     @abstractmethod
+    def getContextMenuText(self):
+        """Returns text used by treeview to show context menu action"""
+
+    @abstractmethod
+    def handleContextMenu(self):
+        """Invoked by tree model when the node has been selected and corresponding menu item clicked"""
+
+    @abstractmethod
     def processConfigResponse(self, msg):
         """implementation to be provided by child classes"""
 

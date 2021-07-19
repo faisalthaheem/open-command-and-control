@@ -9,3 +9,9 @@ class EoStationNode(StationNode):
 
     def processConfigResponse(self, msg):
         self._logger.debug("Got config response [{}]".format(msg.get_response()))
+
+    def getContextMenuText(self):
+        return "Open Camera Controls"
+
+    def handleContextMenu(self):
+        self._logger.debug("Camera controls not implemented")
