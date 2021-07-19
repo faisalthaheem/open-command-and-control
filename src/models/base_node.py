@@ -3,8 +3,11 @@
 
 class BaseNode(object):
 
-    def __init__(self, data):
+    def __init__(self, data, stanag_server):
+        
+        self._stanag_server = stanag_server
         self._data = data
+        
         if type(data) == tuple:
             self._data = list(data)
         if type(data) is str or not hasattr(data, '__getitem__'):

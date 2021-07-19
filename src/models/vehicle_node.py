@@ -1,10 +1,9 @@
-# based on https://gist.github.com/nbassler/342fc56c42df27239fa5276b79fca8e6
-
 from .station_node import StationNode
 from .eo_station_node import EoStationNode
 
 from stanag4586vsm.entity_controller import EntityController
 from stanag4586edav1.message300 import Message300
+from stanag4586edav1.message20010 import *
 
 class VehicleNode(StationNode):
     
@@ -15,8 +14,8 @@ class VehicleNode(StationNode):
         Message300.PAYLOAD_TYPE_FIXED_CAMERA,
     ]
     
-    def __init__(self, data):
-        super().__init__(data)
+    def __init__(self, data, station_type, stanag_server):
+        super().__init__(data, station_type, stanag_server)
 
     def sync_stations(self, stations):
 
@@ -37,7 +36,18 @@ class VehicleNode(StationNode):
                 station_data[EntityController.KEY_CONTROLLED],
             )
 
+            if station.getType() in self.__eo_payaload_types:
+                vehicle_id = self.data(0)
+                station_id = station.data(0)
+
+                self._stanag_server.get_entity_controller().query_request(vehicle_id, station_id, Message20010.QUERY_TYPE_SEND_CONFIG)
+
+            
+
     def __new_station_node(self, station_id, station_data):
         
         if station_data[EntityController.KEY_TYPE] in self.__eo_payaload_types:
-            return EoStationNode((station_id, "EO"))
+            return EoStationNode((station_id, "EO"), station_data[EntityController.KEY_TYPE], self._stanag_server)
+
+    def processConfigResponse(self, msg):
+        pass    

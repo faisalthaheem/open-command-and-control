@@ -36,20 +36,20 @@ class VehicleModel(QtCore.QAbstractItemModel):
         self.__logger.setLevel(logging.DEBUG)
 
         QtCore.QAbstractItemModel.__init__(self)
-        self._root = BaseNode(None)
-        self.__root_node_ugv = BaseNode(("UGVs","Ground vehicles"))
-        self.__root_node_uav = BaseNode(("UAVs","Air vehicles"))
-        self.__root_node_usv = BaseNode(("USVs","Sea vehicles"))
-        self.__root_node_uuv = BaseNode(("UUVs","Submerged vehicles"))
+        self.__root_node = BaseNode(None, self.__stanag_server)
+        self.__root_node_ugv = BaseNode(("UGVs","Ground vehicles"), self.__stanag_server)
+        self.__root_node_uav = BaseNode(("UAVs","Air vehicles"), self.__stanag_server)
+        self.__root_node_usv = BaseNode(("USVs","Sea vehicles"), self.__stanag_server)
+        self.__root_node_uuv = BaseNode(("UUVs","Submerged vehicles"), self.__stanag_server)
 
-        self._root.addChild(self.__root_node_ugv)
-        self._root.addChild(self.__root_node_uav)
-        self._root.addChild(self.__root_node_usv)
-        self._root.addChild(self.__root_node_uuv)
+        self.__root_node.addChild(self.__root_node_ugv)
+        self.__root_node.addChild(self.__root_node_uav)
+        self.__root_node.addChild(self.__root_node_usv)
+        self.__root_node.addChild(self.__root_node_uuv)
 
         if nodes is not None:
             for node in nodes:
-                self._root.addChild(node)
+                self.__root_node.addChild(node)
 
         self.setupContextMenu()
 
@@ -57,13 +57,14 @@ class VehicleModel(QtCore.QAbstractItemModel):
         #instantiate stanag server and bind to events
         self.__stanag_server = stanag_server
         self.__stanag_server.get_entity_controller().set_callback_for_vehicle_discovery(self.handle_vehicle_discovery)
+        self.__stanag_server.get_entity_controller().set_callback_for_unhandled_messages(self.process_unhandled_message)
 
     def setupContextMenu(self):
         
         self.__action_req_ctrl = QAction("Request Control", self)
         self.__action_req_mon = QAction("Request Monitor", self)
-        self.__action_req_dis_ctrl = QAction("Disonnect Control", self)
-        self.__action_req_dis_mon = QAction("Disconnect Monitor", self)
+        self.__action_req_dis_ctrl = QAction("Release Control", self)
+        self.__action_req_dis_mon = QAction("Release Monitor", self)
 
         self.__action_req_ctrl.triggered.connect(self.requestControl)
         self.__action_req_mon.triggered.connect(self.requestMonitor)
@@ -80,18 +81,18 @@ class VehicleModel(QtCore.QAbstractItemModel):
     def rowCount(self, index):
         if index.isValid():
             return index.internalPointer().childCount()
-        return self._root.childCount()
+        return self.__root_node.childCount()
 
     def addChild(self, node, _parent):
         if not _parent or not _parent.isValid():
-            parent = self._root
+            parent = self.__root_node
         else:
             parent = _parent.internalPointer()
         parent.addChild(node)
 
     def index(self, row, column, _parent=None):
         if not _parent or not _parent.isValid():
-            parent = self._root
+            parent = self.__root_node
         else:
             parent = _parent.internalPointer()
 
@@ -114,7 +115,7 @@ class VehicleModel(QtCore.QAbstractItemModel):
     def columnCount(self, index):
         if index.isValid():
             return index.internalPointer().columnCount()
-        return self._root.columnCount()
+        return self.__root_node.columnCount()
 
     def data(self, index, role):
         if not index.isValid():
@@ -143,7 +144,38 @@ class VehicleModel(QtCore.QAbstractItemModel):
                 return QtGui.QBrush(QtCore.Qt.yellow)
 
         return None
+
+    def process_unhandled_message(self, wrapper, msg):
+        
+        if wrapper.message_type == 20020:
+            """Config response message"""
+            self.__logger.debug("Got config response ")
+
+            vehicle = self.findVehicle(msg.vehicle_id)
+
+            if vehicle is None:
+                self.__logger.warn("Got config response for a vehicle [{}] that does not exist.".format(msg.vehicle_id))
+                return
+
+            station = vehicle.hasChild(msg.station_number)
+            if station is None:
+                self.__logger.warn("Got config response for a station [{}] for vehicle [{}] that does not exist.".format(msg.station_number, msg.vehicle_id))
+                return
+
+            station.processConfigResponse(msg)
+
+
     
+    def findVehicle(self, vehicle_id):
+        """Looks up the vehicle by id in UGV, UAV, USV OR UUV root nodes
+        Returns vehicleNode if found or None otherwise"""
+
+        for root in [self.__root_node_ugv, self.__root_node_uav, self.__root_node_usv, self.__root_node_uuv]:
+            v = root.hasChild(vehicle_id)
+            if v is not None: return v
+
+        return None
+
     def handle_vehicle_discovery(self, controller, vehicles):
         self.__logger.info("Vehicles discovered [{}]".format(vehicles))
 
@@ -165,7 +197,7 @@ class VehicleModel(QtCore.QAbstractItemModel):
                     
                     call_sign = discovered_vehicles[veh_id][EntityController.KEY_META][EntityController.KEY_CALL_SIGN]
                     
-                    ugv = VehicleNode((veh_id, call_sign))
+                    ugv = VehicleNode((veh_id, call_sign), 0, self.__stanag_server)
                     self.__root_node_ugv.addChild(ugv)
 
                 if None != ugv:
