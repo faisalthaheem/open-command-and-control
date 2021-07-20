@@ -1,3 +1,4 @@
+from PyQt5.QtWidgets import QAction
 from .station_node import StationNode
 from .eo_station_node import EoStationNode
 
@@ -13,9 +14,15 @@ class VehicleNode(StationNode):
         Message300.PAYLOAD_TYPE_IR,
         Message300.PAYLOAD_TYPE_FIXED_CAMERA,
     ]
-    
-    def __init__(self, data, station_type, stanag_server):
-        super().__init__(data, station_type, stanag_server)
+
+    def __init__(self, data, vehicle_id, station_id, station_type, stanag_server):
+        super().__init__(data, vehicle_id, station_id, station_type, stanag_server)
+
+        self.setupContextMenuActions()
+
+    def setupContextMenuActions(self):
+        self._action_open_drive_controls = QAction("Open Drive Controls")
+        self._action_open_drive_controls.triggered.connect(self.open_drive_controls_triggered)
 
     def sync_stations(self, stations):
 
@@ -47,13 +54,28 @@ class VehicleNode(StationNode):
     def __new_station_node(self, station_id, station_data):
         
         if station_data[EntityController.KEY_TYPE] in self.__eo_payaload_types:
-            return EoStationNode((station_id, "EO"), station_data[EntityController.KEY_TYPE], self._stanag_server)
+            return EoStationNode(
+                (station_id, "EO"),
+                self._vehicle_id,
+                station_id, 
+                station_data[EntityController.KEY_TYPE],
+                 self._stanag_server)
 
     def processConfigResponse(self, msg):
         pass
 
-    def getContextMenuText(self):
-        return "Open Drive Controls"
-
-    def handleContextMenu(self):
+    def open_drive_controls_triggered(self):
         self._logger.debug("Drive controls not implemented")
+
+    def getContextMenuActions(self):
+
+        contextMenuActions = super().getContextMenuActions()
+
+        if self.isControlled():
+            self._action_open_drive_controls.setEnabled(True)
+        else:
+            self._action_open_drive_controls.setEnabled(False)
+        
+        contextMenuActions.append(self._action_open_drive_controls)
+
+        return contextMenuActions

@@ -6,11 +6,11 @@ from PyQt5.QtGui import QColor, QCursor, QIcon
 from PyQt5.QtWidgets import QAction, QMenu
 from stanag4586edav1.message21 import Message21
 from models.base_node import BaseNode
-
 from models.eo_station_node import EoStationNode
 from models.station_node import StationNode
 from .vehicle_node import VehicleNode
 import logging
+import copy
 
 from stanag4586vsm.stanag_server import *
 
@@ -24,11 +24,6 @@ class VehicleModel(QtCore.QAbstractItemModel):
     __root_node_uuv = None
     __stanag_server = None
 
-    __cntx_menu = None
-    __action_req_ctrl = None
-    __action_req_mon = None
-    __action_req_dis_ctrl = None
-    __action_req_dis_mon = None
 
     def __init__(self, stanag_server, nodes = None):
         
@@ -51,34 +46,12 @@ class VehicleModel(QtCore.QAbstractItemModel):
             for node in nodes:
                 self.__root_node.addChild(node)
 
-        self.setupContextMenu()
-
 
         #instantiate stanag server and bind to events
         self.__stanag_server = stanag_server
         self.__stanag_server.get_entity_controller().set_callback_for_vehicle_discovery(self.handle_vehicle_discovery)
         self.__stanag_server.get_entity_controller().set_callback_for_unhandled_messages(self.process_unhandled_message)
 
-    def setupContextMenu(self):
-        
-        self.__action_req_ctrl = QAction("Request Control", self)
-        self.__action_req_mon = QAction("Request Monitor", self)
-        self.__action_req_dis_ctrl = QAction("Release Control", self)
-        self.__action_req_dis_mon = QAction("Release Monitor", self)
-        self.__action_node_specific = QAction("", self)
-
-        self.__action_req_ctrl.triggered.connect(self.requestControl)
-        self.__action_req_mon.triggered.connect(self.requestMonitor)
-        self.__action_req_dis_ctrl.triggered.connect(self.requestDisconnectControl)
-        self.__action_req_dis_mon.triggered.connect(self.requestDisconnectMonitor)
-        self.__action_node_specific.triggered.connect(self.nodeSpecificActionRequested)
-
-        self.__cntx_menu = QMenu()
-        self.__cntx_menu.addAction(self.__action_req_ctrl)
-        self.__cntx_menu.addAction(self.__action_req_mon)
-        self.__cntx_menu.addAction(self.__action_req_dis_ctrl)
-        self.__cntx_menu.addAction(self.__action_req_dis_mon)
-        self.__cntx_menu.addAction(self.__action_node_specific)
 
     def rowCount(self, index):
         if index.isValid():
@@ -199,7 +172,7 @@ class VehicleModel(QtCore.QAbstractItemModel):
                     
                     call_sign = discovered_vehicles[veh_id][EntityController.KEY_META][EntityController.KEY_CALL_SIGN]
                     
-                    ugv = VehicleNode((veh_id, call_sign), 0, self.__stanag_server)
+                    ugv = VehicleNode((veh_id, call_sign), veh_id, 0, 0, self.__stanag_server)
                     self.__root_node_ugv.addChild(ugv)
 
                 if None != ugv:
@@ -225,30 +198,15 @@ class VehicleModel(QtCore.QAbstractItemModel):
         if type(node) in [EoStationNode, VehicleNode]:
             self.__logger.debug("Station node clicked")
 
-            self.__action_node_specific.setText(node.getContextMenuText())
+            #nodeContext
+            nodeActions = node.getContextMenuActions()
 
-            #enable/disable actions
-            if node.isControlled():
-                self.__action_req_ctrl.setEnabled(False)
-                self.__action_req_dis_ctrl.setEnabled(True)
-                #controls are allowed only when controlling the station
-                self.__action_node_specific.setEnabled(True)
-            else:
-                self.__action_req_ctrl.setEnabled(True)
-                self.__action_req_dis_ctrl.setEnabled(False)
-                #controls are allowed only when controlling the station
-                self.__action_node_specific.setEnabled(False)
+            ctxMenu = QMenu()
+            for action in nodeActions:
+                ctxMenu.addAction(action)
 
-
-            if node.isMonitored():
-                self.__action_req_mon.setEnabled(False)
-                self.__action_req_dis_mon.setEnabled(True)
-            else:
-                self.__action_req_mon.setEnabled(True)
-                self.__action_req_dis_mon.setEnabled(False)
-
-
-            self.__cntx_menu.exec_(QCursor.pos())
+            # self.__cntx_menu.exec_(QCursor.pos())
+            ctxMenu.exec_(QCursor.pos())
 
     def getSelectedNode(self):            
         if self.__owing_tree is None:
@@ -262,65 +220,7 @@ class VehicleModel(QtCore.QAbstractItemModel):
 
         return None
 
-    def requestMonitor(self, qa):
-        self.__logger.debug("requestMonitor")
-        
-        node = self.getSelectedNode()
-        if node is None: return
-
-        if type(node) == EoStationNode:
-            station_id = node._data[0]
-            vehicle_id = node._parent._data[0]
-            self.__stanag_server.get_entity_controller().monitor_request(station_id, vehicle_id)
-        
-        elif type(node) == VehicleNode:
-            vehicle_id = node._data[0]
-            self.__stanag_server.get_entity_controller().monitor_request(0, vehicle_id)
-
-    def requestControl(self, qa):
-        self.__logger.debug("requestControl")
-
-        node = self.getSelectedNode()
-        if node is None: return
-
-        if type(node) == EoStationNode:
-            station_id = node._data[0]
-            vehicle_id = node._parent._data[0]
-            self.__stanag_server.get_entity_controller().control_request(station_id, vehicle_id)
-        
-        elif type(node) == VehicleNode:
-            vehicle_id = node._data[0]
-            self.__stanag_server.get_entity_controller().control_request(0, vehicle_id)
-
-    def requestDisconnectMonitor(self, qa):
-        self.__logger.debug("requestDisconnectMonitor")
-
-        node = self.getSelectedNode()
-        if node is None: return
-
-        if type(node) == EoStationNode:
-            station_id = node._data[0]
-            vehicle_id = node._parent._data[0]
-            self.__stanag_server.get_entity_controller().monitor_release(station_id, vehicle_id)
-        
-        elif type(node) == VehicleNode:
-            vehicle_id = node._data[0]
-            self.__stanag_server.get_entity_controller().monitor_release(0, vehicle_id)
-
-    def requestDisconnectControl(self, qa):
-        self.__logger.debug("requestDisconnectControl")
-
-        node = self.getSelectedNode()
-        if node is None: return
-
-        if type(node) == EoStationNode:
-            station_id = node._data[0]
-            vehicle_id = node._parent._data[0]
-            self.__stanag_server.get_entity_controller().control_release(station_id, vehicle_id)
-
-        elif type(node) == VehicleNode:
-            vehicle_id = node._data[0]
-            self.__stanag_server.get_entity_controller().control_release(0, vehicle_id)
+    
 
     def nodeSpecificActionRequested(self, qa):
         
