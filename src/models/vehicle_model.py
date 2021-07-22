@@ -24,23 +24,31 @@ class VehicleModel(QtCore.QAbstractItemModel):
     __root_node_uuv = None
     __stanag_server = None
 
+    """A callback which allows nodes to request the host app to open new dialogs"""
+    """Signature is func(requesting_node)"""
+    _cb_ui_action_request = None
 
-    def __init__(self, stanag_server, nodes = None):
+    def __init__(self, stanag_server, cb_ui_action_request, nodes = None):
         
         self.__logger = logging.getLogger("VehicleModel")
         self.__logger.setLevel(logging.DEBUG)
 
+        self._cb_ui_action_request = cb_ui_action_request
+
         QtCore.QAbstractItemModel.__init__(self)
-        self.__root_node = BaseNode(None, self.__stanag_server)
-        self.__root_node_ugv = BaseNode(("UGVs","Ground vehicles"), self.__stanag_server)
-        self.__root_node_uav = BaseNode(("UAVs","Air vehicles"), self.__stanag_server)
-        self.__root_node_usv = BaseNode(("USVs","Sea vehicles"), self.__stanag_server)
-        self.__root_node_uuv = BaseNode(("UUVs","Submerged vehicles"), self.__stanag_server)
+        self.__root_node = BaseNode(None, self.__stanag_server, cb_ui_action_request)
+        self.__root_node_ugv = BaseNode(("UGVs","Ground vehicles"), self.__stanag_server, cb_ui_action_request)
+        self.__root_node_uav = BaseNode(("UAVs","Air vehicles"), self.__stanag_server, cb_ui_action_request)
+        self.__root_node_usv = BaseNode(("USVs","Sea vehicles"), self.__stanag_server, cb_ui_action_request)
+        self.__root_node_uuv = BaseNode(("UUVs","Submerged vehicles"), self.__stanag_server, cb_ui_action_request)
 
         self.__root_node.addChild(self.__root_node_ugv)
         self.__root_node.addChild(self.__root_node_uav)
         self.__root_node.addChild(self.__root_node_usv)
         self.__root_node.addChild(self.__root_node_uuv)
+
+        self._color_monitored = QColor.fromRgb(255,255,0)
+        self._color_controlled = QColor.fromRgb(0,255,0)
 
         if nodes is not None:
             for node in nodes:
@@ -104,19 +112,22 @@ class VehicleModel(QtCore.QAbstractItemModel):
             if index.column() > 0:
                 return node.data(index.column())
             else:
-                text = node.data(index.column())
-                if node.isControlled():
-                    text = "++" + str(text)
-                elif node.isMonitored():
-                    text = "+" + str(text)
-                
+                text = node.data(index.column())                
                 return text
 
-        if (role==QtCore.Qt.BackgroundColorRole) and (type(node) in [VehicleNode, EoStationNode]):
+        # if (role==QtCore.Qt.BackgroundColorRole) and (type(node) in [VehicleNode, EoStationNode]):
+        #     if node.isControlled():
+        #         return QtGui.QBrush(QtCore.Qt.green)
+        #     elif node.isMonitored():
+        #         return QtGui.QBrush(QtCore.Qt.yellow)
+
+        if index.column() == 0 and (role==QtCore.Qt.DecorationRole) and (type(node) in [VehicleNode, EoStationNode]):
             if node.isControlled():
-                return QtGui.QBrush(QtCore.Qt.green)
+                return self._color_controlled
             elif node.isMonitored():
-                return QtGui.QBrush(QtCore.Qt.yellow)
+                return self._color_monitored
+            else:
+                return None
 
         return None
 
@@ -170,9 +181,15 @@ class VehicleModel(QtCore.QAbstractItemModel):
                 if None == ugv:
                     self.__logger.debug("New ugv discovered [{}]".format(veh_id))
                     
+                    if EntityController.KEY_META not in discovered_vehicles[veh_id].keys():
+                        continue
+                    if discovered_vehicles[veh_id][EntityController.KEY_META] is None or \
+                       EntityController.KEY_CALL_SIGN not in discovered_vehicles[veh_id][EntityController.KEY_META].keys():
+                        continue
+
                     call_sign = discovered_vehicles[veh_id][EntityController.KEY_META][EntityController.KEY_CALL_SIGN]
                     
-                    ugv = VehicleNode((veh_id, call_sign), veh_id, 0, 0, self.__stanag_server)
+                    ugv = VehicleNode((veh_id, call_sign), veh_id, 0, 0, self.__stanag_server, self._cb_ui_action_request)
                     self.__root_node_ugv.addChild(ugv)
 
                 if None != ugv:

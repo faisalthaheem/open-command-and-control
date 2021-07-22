@@ -4,9 +4,14 @@ from PyQt5.QtWidgets import QAction
 from stanag4586edav1.message20020 import *
 
 from .station_node import StationNode
+
+import json
 class EoStationNode(StationNode):
-    def __init__(self, data, vehicle_id, station_id, station_type, stanag_server):
-        super().__init__(data, vehicle_id, station_id, station_type, stanag_server)
+
+    _daytime_rtsp_uri = ""
+
+    def __init__(self, data, vehicle_id, station_id, station_type, stanag_server, cb_ui_action_request):
+        super().__init__(data, vehicle_id, station_id, station_type, stanag_server, cb_ui_action_request)
 
         EoStationNode.setupContextMenuActions(self)
 
@@ -16,6 +21,13 @@ class EoStationNode(StationNode):
 
     def processConfigResponse(self, msg):
         self._logger.debug("Got config response [{}]".format(msg.get_response()))
+        res = json.loads(msg.get_response())
+
+        if res is not None:
+            self._daytime_rtsp_uri = res["daylight"]
+
+    def getMediaUri(self):
+        return self._daytime_rtsp_uri
 
     def getContextMenuActions(self):
 
@@ -32,3 +44,4 @@ class EoStationNode(StationNode):
 
     def openCameraControlsTriggerd(self, qa):
         self._logger.debug("Camera controls not implemented")
+        self.raiseUiActionRequest()

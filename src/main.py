@@ -4,16 +4,18 @@ import logging
 
 from PyQt5 import uic
 from PyQt5.QtCore import Qt, QTimer, QDir, QSignalBlocker
-from PyQt5.QtGui import QCloseEvent, QIcon
-from PyQt5.QtWidgets import (QApplication, QLabel, QCalendarWidget, QFrame, QTreeView,
-                             QTableWidget, QFileSystemModel, QPlainTextEdit, QToolBar,
+from PyQt5.QtGui import QCloseEvent, QIcon, QTextBlock
+from PyQt5.QtWidgets import (QApplication, QLabel, QCalendarWidget, QFrame, QTabWidget, QTreeView,
+                             QTableWidget, QFileSystemModel, QPlainTextEdit, QToolBar, QWidget,
                              QWidgetAction, QComboBox, QAction, QSizePolicy, QInputDialog)
 
 from PyQtAds import QtAds
+from models.eo_station_node import EoStationNode
 from models.vehicle_model import VehicleModel
 
 from models.vehicle_node import VehicleNode
 
+from widgets.c2_video_widget import C2VideoWidget
 from stanag4586vsm.stanag_server import *
 
 UI_FILE = os.path.join(os.path.dirname(__file__), 'templates/qt/mainwindow.ui')
@@ -52,15 +54,23 @@ class MainWindow(MainWindowUI, MainWindowBase):
         self.dock_manager = QtAds.CDockManager(self)
         
         # Set central widget
-        text_edit = QPlainTextEdit()
-        text_edit.setPlaceholderText("This is the central editor. Enter your text here.")
+        self._central_tab_widget = QTabWidget()
+        self._central_tab_widget.setTabsClosable(True)
+        self._central_tab_widget.tabCloseRequested.connect(self.tabCloseRequested)
+        self._central_tab_widget.setTabPosition(2)
+
+        txt_lbl = QLabel()
+        txt_lbl.setText("Will be repalced by a map")
+        self._central_tab_widget.addTab(txt_lbl, "Map")
+
         central_dock_widget = QtAds.CDockWidget("CentralWidget")
-        central_dock_widget.setWidget(text_edit)
+        # central_dock_widget.setWidget(text_edit)
+        central_dock_widget.setWidget(self._central_tab_widget)
         central_dock_area = self.dock_manager.setCentralWidget(central_dock_widget)
         central_dock_area.setAllowedAreas(QtAds.DockWidgetArea.OuterDockAreas)
         
         #setup data
-        self.__model_vehicles = VehicleModel(stanag_server)
+        self.__model_vehicles = VehicleModel(stanag_server, self.uiActionRequested)
 
         # create other dock widgets
         vehicles_tree = QTreeView()
@@ -108,6 +118,21 @@ class MainWindow(MainWindowUI, MainWindowBase):
     def closeEvent(self, event: QCloseEvent):
         self.dock_manager.deleteLater()
         super().closeEvent(event)
+
+    def tabCloseRequested(self, tab_id):
+        if tab_id > 0:
+            self._central_tab_widget.removeTab(tab_id)
+
+    def openVideoWidget(self, requesting_node):
+        simple_widget = QWidget()
+        vw = C2VideoWidget(simple_widget, requesting_node, stanag_server)
+        self._central_tab_widget.addTab(simple_widget, "Video")
+        self._central_tab_widget.setCurrentWidget(simple_widget)
+
+    def uiActionRequested(self, requesting_node):
+        """Called by treeview nodes etc to open new windows"""
+        if type(requesting_node) is EoStationNode:
+            self.openVideoWidget(requesting_node)
 
 stanag_server = None
 

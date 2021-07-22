@@ -1,11 +1,16 @@
 # based on https://gist.github.com/nbassler/342fc56c42df27239fa5276b79fca8e6
 
-
+import asyncio
 class BaseNode(object):
 
-    def __init__(self, data, stanag_server):
+    """A callback which allows nodes to request the host app to open new dialogs"""
+    """Signature is func(requesting_node)"""
+    _cb_ui_action_request = None
+
+    def __init__(self, data, stanag_server, cb_ui_action_request):
         
         self._stanag_server = stanag_server
+        self._cb_ui_action_request = cb_ui_action_request
         self._data = data
         
         if type(data) == tuple:
@@ -54,3 +59,7 @@ class BaseNode(object):
                 return c
 
         return None
+
+    def raiseUiActionRequest(self):
+        if self._cb_ui_action_request is not None:
+            asyncio.get_running_loop().call_soon(self._cb_ui_action_request, self)

@@ -15,8 +15,8 @@ class VehicleNode(StationNode):
         Message300.PAYLOAD_TYPE_FIXED_CAMERA,
     ]
 
-    def __init__(self, data, vehicle_id, station_id, station_type, stanag_server):
-        super().__init__(data, vehicle_id, station_id, station_type, stanag_server)
+    def __init__(self, data, vehicle_id, station_id, station_type, stanag_server, cb_ui_action_request):
+        super().__init__(data, vehicle_id, station_id, station_type, stanag_server, cb_ui_action_request)
 
         self.setupContextMenuActions()
 
@@ -59,7 +59,8 @@ class VehicleNode(StationNode):
                 self._vehicle_id,
                 station_id, 
                 station_data[EntityController.KEY_TYPE],
-                 self._stanag_server)
+                self._stanag_server,
+                self._cb_ui_action_request)
 
     def processConfigResponse(self, msg):
         pass

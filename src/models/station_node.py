@@ -15,8 +15,8 @@ class StationNode(BaseNode, ABC):
     __action_req_dis_mon = None
 
     
-    def __init__(self, data, vehicle_id, station_id, station_type, stanag_server):
-        super().__init__(data, stanag_server)
+    def __init__(self, data, vehicle_id, station_id, station_type, stanag_server, cb_ui_action_request):
+        super().__init__(data, stanag_server, cb_ui_action_request)
 
         self._vehicle_id = vehicle_id
         self._station_id  = station_id
@@ -32,6 +32,8 @@ class StationNode(BaseNode, ABC):
             self._logger.setLevel(logging.CRITICAL)
 
         StationNode.setupContextMenuActions(self)
+
+
 
     def setupContextMenuActions(self):
         self.__action_req_ctrl = QAction("Request Control")
@@ -55,6 +57,12 @@ class StationNode(BaseNode, ABC):
         if monitored is not None: self.__monitored = monitored
         if controlled is not None: self.__controlled = controlled
 
+    def getVehicleId(self):
+        return self._vehicle_id
+    
+    def getStationId(self):
+        return self._station_id
+        
     def getType(self):
         return self._station_type
 
