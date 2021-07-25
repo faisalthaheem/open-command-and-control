@@ -4,6 +4,6 @@ The project is in it's initial stages and works in conjunction with https://gith
 
 ![Initial version](docs/screenshots/open-command-and-control-v1.png?raw=true "Open C2")
 Initial version of open c2 with support for discover, monitor and control of stanag vehicles.
-Also pan and tilt controls for electro optic payloads.
+Pan and tilt controls for electro optic payloads.
 
 Complies with STANAG 4586

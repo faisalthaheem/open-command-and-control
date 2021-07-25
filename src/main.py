@@ -53,22 +53,15 @@ class MainWindow(MainWindowUI, MainWindowBase):
         QtAds.CDockManager.setConfigFlag(QtAds.CDockManager.FocusHighlighting, True)
         self.dock_manager = QtAds.CDockManager(self)
         
-        # Set central widget
-        self._central_tab_widget = QTabWidget()
-        self._central_tab_widget.setTabsClosable(True)
-        self._central_tab_widget.tabCloseRequested.connect(self.tabCloseRequested)
-        self._central_tab_widget.setTabPosition(2)
-
         txt_lbl = QLabel()
         txt_lbl.setText("Will be repalced by a map")
-        self._central_tab_widget.addTab(txt_lbl, "Map")
+        # self._central_tab_widget.addTab(txt_lbl, "Map")
 
         central_dock_widget = QtAds.CDockWidget("CentralWidget")
-        # central_dock_widget.setWidget(text_edit)
-        central_dock_widget.setWidget(self._central_tab_widget)
-        central_dock_area = self.dock_manager.setCentralWidget(central_dock_widget)
-        central_dock_area.setAllowedAreas(QtAds.DockWidgetArea.OuterDockAreas)
-        
+        central_dock_widget.setWidget(txt_lbl)
+        # central_dock_widget.setFeature(QtAds.DockWidgetArea)
+        self._central_dock_area = self.dock_manager.setCentralWidget(central_dock_widget)
+
         #setup data
         self.__model_vehicles = VehicleModel(stanag_server, self.uiActionRequested)
 
@@ -81,12 +74,12 @@ class MainWindow(MainWindowUI, MainWindowBase):
         vehicles_tree.customContextMenuRequested.connect(self.__model_vehicles.contextMenuRequested)
 
         vehicles_tree.setModel(self.__model_vehicles)
-        data_dock_widget = QtAds.CDockWidget("File system")
-        data_dock_widget.setWidget(vehicles_tree)
-        data_dock_widget.resize(150, 250)
-        data_dock_widget.setMinimumSize(100, 250)
-        file_area = self.dock_manager.addDockWidget(QtAds.DockWidgetArea.LeftDockWidgetArea, data_dock_widget, central_dock_area)
-        self.menuView.addAction(data_dock_widget.toggleViewAction())
+        vehicle_explorer_dock_widget = QtAds.CDockWidget("Vehicle Explorer")
+        vehicle_explorer_dock_widget.setWidget(vehicles_tree)
+        vehicle_explorer_dock_widget.resize(150, 250)
+        vehicle_explorer_dock_widget.setMinimumSize(100, 250)
+        self.dock_manager.addDockWidget(QtAds.DockWidgetArea.LeftDockWidgetArea, vehicle_explorer_dock_widget, self._central_dock_area)
+        self.menuView.addAction(vehicle_explorer_dock_widget.toggleViewAction())
         
         self.create_perspective_ui()
         
@@ -124,10 +117,14 @@ class MainWindow(MainWindowUI, MainWindowBase):
             self._central_tab_widget.removeTab(tab_id)
 
     def openVideoWidget(self, requesting_node):
+
+        dock_widget = QtAds.CDockWidget("Video Controls [v-{}:s-{}]".format(requesting_node.getVehicleId(), requesting_node.getStationId()))
+        
         simple_widget = QWidget()
         vw = C2VideoWidget(simple_widget, requesting_node, stanag_server)
-        self._central_tab_widget.addTab(simple_widget, "Video")
-        self._central_tab_widget.setCurrentWidget(simple_widget)
+        dock_widget.setWidget(simple_widget)
+
+        self.dock_manager.addDockWidgetTabToArea(dock_widget, self._central_dock_area)
 
     def uiActionRequested(self, requesting_node):
         """Called by treeview nodes etc to open new windows"""

@@ -9,7 +9,7 @@ from .video_widget import Ui_Form
 from stanag4586edav1.message_wrapper import *
 from stanag4586edav1.message20000 import *
 
-
+import time
 import asyncio
 
 class C2VideoWidget(Ui_Form):
@@ -105,26 +105,33 @@ class C2VideoWidget(Ui_Form):
     def up(self, sendStop=False):
         print("up")
         self.sendPtzMessage(Message20000.PAN_DIRECTION_NONE, Message20000.TILT_DIRECTION_UP)
-        if sendStop: self.sendStopPtz()
+        if sendStop: 
+            self.sendStopPtzDelayed(0.3)
 
     def down(self, sendStop=False):
         print("down")
         self.sendPtzMessage(Message20000.PAN_DIRECTION_NONE, Message20000.TILT_DIRECTION_DOWN)
-        if sendStop: self.sendStopPtz()
+        if sendStop: 
+            self.sendStopPtzDelayed(0.3)
 
     def left(self, sendStop=False):
         print("left")
         self.sendPtzMessage(Message20000.PAN_DIRECTION_LEFT, Message20000.TILT_DIRECTION_NONE)
-        if sendStop: self.sendStopPtz()
+        if sendStop: 
+            self.sendStopPtzDelayed(0.3)
 
     def right(self, sendStop=False):
         print("right")
         self.sendPtzMessage(Message20000.PAN_DIRECTION_RIGHT, Message20000.TILT_DIRECTION_NONE)
-        if sendStop: self.sendStopPtz()
+        if sendStop: 
+            self.sendStopPtzDelayed(0.3)
+
+    def sendStopPtzDelayed(self, delay=0.0):
+        time.sleep(delay)
+        asyncio.get_running_loop().call_soon(self.sendStopPtz)
 
     def sendStopPtz(self):
         self.sendPtzMessage(Message20000.PAN_DIRECTION_NONE, Message20000.TILT_DIRECTION_NONE)
-
 
     def sendPtzMessage(self, pan_direction, tilt_direction):
 
