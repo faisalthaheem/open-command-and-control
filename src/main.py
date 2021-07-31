@@ -121,7 +121,7 @@ class MainWindow(MainWindowUI, MainWindowBase):
         dock_widget = QtAds.CDockWidget("Video Controls [v-{}:s-{}]".format(requesting_node.getVehicleId(), requesting_node.getStationId()))
         
         simple_widget = QWidget()
-        vw = C2EoStationWidget(simple_widget, requesting_node, stanag_server)
+        vw = C2EoStationWidget(simple_widget, requesting_node, stanag_server, self.__model_vehicles)
         dock_widget.setWidget(simple_widget)
 
         self.dock_manager.addDockWidgetTabToArea(dock_widget, self._central_dock_area)

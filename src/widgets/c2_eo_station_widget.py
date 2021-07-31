@@ -2,6 +2,8 @@ from PyQt5.QtWidgets import QWidget, QSizePolicy
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import QUrl, QTimer
+from PyQt5.QtCore import pyqtSlot
+
 from stanag4586edav1.message20000 import Message20000
 
 from .eo_station_widget import Ui_Form
@@ -29,13 +31,14 @@ class C2EoStationWidget(Ui_Form):
 
     _stanag_server = None
     
-    def __init__(self, parent=None, eo_node=None, stanag_server=None):
+    def __init__(self, parent=None, eo_node=None, stanag_server=None, vehicle_data_model=None):
         
         super().setupUi(parent)
 
         self._stanag_server = stanag_server
-
         self._eo_node = eo_node
+        self._vehicle_data_model = vehicle_data_model
+
         self._timer_ptz = QTimer()
         self._timer_ptz.timeout.connect(self.timer_ptz_timedout)
 
@@ -44,7 +47,6 @@ class C2EoStationWidget(Ui_Form):
 
         self.setupMediaPlayer()
         self.setupSlots()
-
 
     def setupMediaPlayer(self):
 
@@ -97,8 +99,19 @@ class C2EoStationWidget(Ui_Form):
         self.btnMastUp.released.connect(lambda: self.mastButtonReleased())
         self.btnMastDown.released.connect(lambda: self.mastButtonReleased())
 
+        #for status messages
+        self._vehicle_data_model.onMastStatusReceived.connect(self.onMastStatusReceived)
 
     #Mast related
+    def onMastStatusReceived(self, msg):
+        if msg.vehicle_id != self._eo_node.getVehicleId():
+            return
+        
+        self.progressMastHeight.setMinimum(msg.min_height*10)
+        #scale the values as step count for progress is 1
+        self.progressMastHeight.setMaximum(msg.max_height*10)
+        self.progressMastHeight.setProperty("value", msg.current_height*10)
+
     def mastButtonPressed(self, direction):
         self._direction_mast = direction
         self._timer_mast.start(100)

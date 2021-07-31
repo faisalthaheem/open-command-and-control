@@ -4,19 +4,25 @@ from PyQt5 import QtCore
 from PyQt5 import QtGui
 from PyQt5.QtGui import QColor, QCursor, QIcon
 from PyQt5.QtWidgets import QAction, QMenu
-from stanag4586edav1.message21 import Message21
 from models.base_node import BaseNode
 from models.eo_station_node import EoStationNode
 from models.station_node import StationNode
 from .vehicle_node import VehicleNode
 import logging
-import copy
 
+from PyQt5.QtCore import pyqtSignal
+
+from stanag4586edav1.message21 import Message21
+from stanag4586edav1.message20040 import Message20040
 from stanag4586vsm.stanag_server import *
 
 
 class VehicleModel(QtCore.QAbstractItemModel):
 
+    #Public members
+    onMastStatusReceived = pyqtSignal(Message20040)
+    
+    #Private members
     __root_node = None
     __root_node_ugv = None
     __root_node_uav = None
@@ -149,6 +155,10 @@ class VehicleModel(QtCore.QAbstractItemModel):
                 return
 
             station.processConfigResponse(msg)
+
+        elif wrapper.message_type == 20040:
+            self.__logger.debug("Got Mast status ")
+            self.onMastStatusReceived.emit(msg)
 
 
     
