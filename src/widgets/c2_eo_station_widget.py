@@ -4,15 +4,17 @@ from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import QUrl, QTimer
 from stanag4586edav1.message20000 import Message20000
 
-from .video_widget import Ui_Form
+from .eo_station_widget import Ui_Form
 
 from stanag4586edav1.message_wrapper import *
 from stanag4586edav1.message20000 import *
+from stanag4586edav1.message20030 import *
+from stanag4586edav1.message20040 import *
 
 import time
 import asyncio
 
-class C2VideoWidget(Ui_Form):
+class C2EoStationWidget(Ui_Form):
 
     UP = 0
     DOWN = 1
@@ -20,8 +22,10 @@ class C2VideoWidget(Ui_Form):
     RIGHT = 3
 
     _eo_node = None
-    _timer = None
-    _direction = UP
+    _timer_ptz = None
+    _timer_mast = None
+    _direction_ptz = UP
+    _direction_mast = UP
 
     _stanag_server = None
     
@@ -32,8 +36,11 @@ class C2VideoWidget(Ui_Form):
         self._stanag_server = stanag_server
 
         self._eo_node = eo_node
-        self._timer = QTimer()
-        self._timer.timeout.connect(self.timer_timedout)
+        self._timer_ptz = QTimer()
+        self._timer_ptz.timeout.connect(self.timer_ptz_timedout)
+
+        self._timer_mast = QTimer()
+        self._timer_mast.timeout.connect(self.timer_mast_timedout)
 
         self.setupMediaPlayer()
         self.setupSlots()
@@ -59,30 +66,83 @@ class C2VideoWidget(Ui_Form):
 
     def setupSlots(self):
 
+        #video playback controls
         self.btn_play.clicked.connect(lambda: self.playButtonClicked())
         self.btn_stop.clicked.connect(lambda: self.stopButtonClicked())
 
+        #camera ptz controls
         self.btnUp.clicked.connect(lambda: self.up(True))
         self.btnDown.clicked.connect(lambda: self.down(True))
         self.btnLeft.clicked.connect(lambda: self.left(True))
         self.btnRight.clicked.connect(lambda: self.right(True))
 
-        self.btnUp.pressed.connect(lambda: self.directionButtonPresssed(self.UP))
-        self.btnDown.pressed.connect(lambda: self.directionButtonPresssed(self.DOWN))
-        self.btnLeft.pressed.connect(lambda: self.directionButtonPresssed(self.LEFT))
-        self.btnRight.pressed.connect(lambda: self.directionButtonPresssed(self.RIGHT))
+        self.btnUp.pressed.connect(lambda: self.ptzButtonPresssed(self.UP))
+        self.btnDown.pressed.connect(lambda: self.ptzButtonPresssed(self.DOWN))
+        self.btnLeft.pressed.connect(lambda: self.ptzButtonPresssed(self.LEFT))
+        self.btnRight.pressed.connect(lambda: self.ptzButtonPresssed(self.RIGHT))
 
-        self.btnUp.released.connect(lambda: self.directionButtonReleased())
-        self.btnDown.released.connect(lambda: self.directionButtonReleased())
-        self.btnLeft.released.connect(lambda: self.directionButtonReleased())
-        self.btnRight.released.connect(lambda: self.directionButtonReleased())
+        self.btnUp.released.connect(lambda: self.ptzButtonReleased())
+        self.btnDown.released.connect(lambda: self.ptzButtonReleased())
+        self.btnLeft.released.connect(lambda: self.ptzButtonReleased())
+        self.btnRight.released.connect(lambda: self.ptzButtonReleased())
 
-    def directionButtonPresssed(self, direction):
-        self._direction = direction
-        self._timer.start(100)
 
-    def directionButtonReleased(self):
-        self._timer.stop()
+        #mast controls
+        self.btnMastUp.clicked.connect(lambda: self.sendMastUp())
+        self.btnMastDown.clicked.connect(lambda: self.sendMastDown())
+
+        self.btnMastUp.pressed.connect(lambda: self.mastButtonPressed(self.UP))
+        self.btnMastDown.pressed.connect(lambda: self.mastButtonPressed(self.DOWN))
+
+        self.btnMastUp.released.connect(lambda: self.mastButtonReleased())
+        self.btnMastDown.released.connect(lambda: self.mastButtonReleased())
+
+
+    #Mast related
+    def mastButtonPressed(self, direction):
+        self._direction_mast = direction
+        self._timer_mast.start(100)
+
+    def mastButtonReleased(self):
+        self._timer_mast.stop()
+
+    def sendMastUp(self):
+        self.sendMastCommand(Message20030.CMD_TYPE_MOVE_UP)
+
+    def sendMastDown(self):
+        self.sendMastCommand(Message20030.CMD_TYPE_MOVE_DOWN)
+
+    def timer_mast_timedout(self):
+        
+        if self._direction_mast is self.UP:
+            self.sendMastUp()
+        elif self._direction_mast is self.DOWN:
+            self.sendMastDown()
+
+    def sendMastCommand(self, cmd_type, absolute_height = 0.0):
+
+        if self._stanag_server is None: return
+
+        msg20030 = Message20030(Message20030.MSGNULL)
+        msg20030.time_stamp = 0x00
+        msg20030.vehicle_id = self._eo_node.getVehicleId()
+        msg20030.cucs_id = 0xA0
+        msg20030.station_number = self._eo_node.getStationId()
+        msg20030.command_type = cmd_type
+        msg20030.absolute_height = absolute_height
+
+        wrapper = MessageWrapper(MessageWrapper.MSGNULL)
+        encoded_msg = wrapper.wrap_message(1, 20030, msg20030, False)
+
+        asyncio.get_running_loop().call_soon(self._stanag_server.tx_data, encoded_msg)
+
+    #PTZ Related
+    def ptzButtonPresssed(self, direction):
+        self._direction_ptz = direction
+        self._timer_ptz.start(100)
+
+    def ptzButtonReleased(self):
+        self._timer_ptz.stop()
         self.sendStopPtz()
         
     def playButtonClicked(self):
@@ -91,15 +151,15 @@ class C2VideoWidget(Ui_Form):
     def stopButtonClicked(self):
         self._player.stop()
 
-    def timer_timedout(self):
+    def timer_ptz_timedout(self):
         
-        if self._direction is self.UP:
+        if self._direction_ptz is self.UP:
             self.up()
-        elif self._direction is self.DOWN:
+        elif self._direction_ptz is self.DOWN:
             self.down()
-        elif self._direction is self.LEFT:
+        elif self._direction_ptz is self.LEFT:
             self.left()
-        elif self._direction is self.RIGHT:
+        elif self._direction_ptz is self.RIGHT:
             self.right()
 
     def up(self, sendStop=False):
@@ -133,7 +193,7 @@ class C2VideoWidget(Ui_Form):
     def sendStopPtz(self):
         self.sendPtzMessage(Message20000.PAN_DIRECTION_NONE, Message20000.TILT_DIRECTION_NONE)
 
-    def sendPtzMessage(self, pan_direction, tilt_direction):
+    def sendPtzMessage(self, pan_direction_ptz, tilt_direction_ptz):
 
         if self._stanag_server is None: return
 
@@ -143,9 +203,9 @@ class C2VideoWidget(Ui_Form):
         msg20000.cucs_id = 0xA0
         msg20000.station_number = self._eo_node.getStationId()
         msg20000.pan_force = 0.5
-        msg20000.pan_direction = pan_direction
+        msg20000.pan_direction = pan_direction_ptz
         msg20000.tilt_force = 0.1
-        msg20000.tilt_direction = tilt_direction
+        msg20000.tilt_direction = tilt_direction_ptz
 
         wrapper = MessageWrapper(MessageWrapper.MSGNULL)
         encoded_msg = wrapper.wrap_message(1, 20000, msg20000, False)

@@ -15,7 +15,7 @@ from models.vehicle_model import VehicleModel
 
 from models.vehicle_node import VehicleNode
 
-from widgets.c2_video_widget import C2VideoWidget
+from widgets.c2_eo_station_widget import C2EoStationWidget
 from stanag4586vsm.stanag_server import *
 
 UI_FILE = os.path.join(os.path.dirname(__file__), 'templates/qt/mainwindow.ui')
@@ -121,7 +121,7 @@ class MainWindow(MainWindowUI, MainWindowBase):
         dock_widget = QtAds.CDockWidget("Video Controls [v-{}:s-{}]".format(requesting_node.getVehicleId(), requesting_node.getStationId()))
         
         simple_widget = QWidget()
-        vw = C2VideoWidget(simple_widget, requesting_node, stanag_server)
+        vw = C2EoStationWidget(simple_widget, requesting_node, stanag_server)
         dock_widget.setWidget(simple_widget)
 
         self.dock_manager.addDockWidgetTabToArea(dock_widget, self._central_dock_area)

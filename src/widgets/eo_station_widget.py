@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'templates/qt/video_widget.ui'
+# Form implementation generated from reading ui file 'templates/qt/eo_station_widget.ui'
 #
 # Created by: PyQt5 UI code generator 5.12.3
 #
@@ -13,7 +13,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
-        Form.resize(640, 480)
+        Form.resize(776, 651)
         self.horizontalLayout = QtWidgets.QHBoxLayout(Form)
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.group_video = QtWidgets.QGroupBox(Form)
@@ -79,8 +79,37 @@ class Ui_Form(object):
         self.btnDown.setObjectName("btnDown")
         self.verticalLayout_3.addWidget(self.btnDown)
         self.verticalLayout_2.addLayout(self.verticalLayout_3)
-        spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.verticalLayout_2.addItem(spacerItem)
+        self.groupBox = QtWidgets.QGroupBox(self.group_box_controls)
+        self.groupBox.setObjectName("groupBox")
+        self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.groupBox)
+        self.verticalLayout_4.setObjectName("verticalLayout_4")
+        self.horizontalLayout_4 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_4.setObjectName("horizontalLayout_4")
+        self.btnMastUp = QtWidgets.QPushButton(self.groupBox)
+        self.btnMastUp.setObjectName("btnMastUp")
+        self.horizontalLayout_4.addWidget(self.btnMastUp)
+        self.btnMastDown = QtWidgets.QPushButton(self.groupBox)
+        self.btnMastDown.setObjectName("btnMastDown")
+        self.horizontalLayout_4.addWidget(self.btnMastDown)
+        self.verticalLayout_4.addLayout(self.horizontalLayout_4)
+        self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_5.setObjectName("horizontalLayout_5")
+        self.progressMastHeight = QtWidgets.QProgressBar(self.groupBox)
+        self.progressMastHeight.setMinimum(1)
+        self.progressMastHeight.setMaximum(10)
+        self.progressMastHeight.setProperty("value", 1)
+        self.progressMastHeight.setOrientation(QtCore.Qt.Vertical)
+        self.progressMastHeight.setObjectName("progressMastHeight")
+        self.horizontalLayout_5.addWidget(self.progressMastHeight)
+        self.sliderMastHeight = QtWidgets.QSlider(self.groupBox)
+        self.sliderMastHeight.setMinimum(1)
+        self.sliderMastHeight.setMaximum(10)
+        self.sliderMastHeight.setOrientation(QtCore.Qt.Vertical)
+        self.sliderMastHeight.setInvertedControls(False)
+        self.sliderMastHeight.setObjectName("sliderMastHeight")
+        self.horizontalLayout_5.addWidget(self.sliderMastHeight)
+        self.verticalLayout_4.addLayout(self.horizontalLayout_5)
+        self.verticalLayout_2.addWidget(self.groupBox)
         self.horizontalLayout.addWidget(self.group_box_controls)
 
         self.retranslateUi(Form)
@@ -98,3 +127,6 @@ class Ui_Form(object):
         self.btnLeft.setText(_translate("Form", "<"))
         self.btnRight.setText(_translate("Form", ">"))
         self.btnDown.setText(_translate("Form", "Down"))
+        self.groupBox.setTitle(_translate("Form", "Mast Controls"))
+        self.btnMastUp.setText(_translate("Form", "Up"))
+        self.btnMastDown.setText(_translate("Form", "Down"))

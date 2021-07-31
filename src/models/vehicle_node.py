@@ -34,9 +34,10 @@ class VehicleNode(StationNode):
         station = self.hasChild(station_id)
         if station is None:
             station = self.__new_station_node(station_id, station_data)
-            self.addChild(station)
 
-        if station is not None:
+        if station is None:
+            self._logger.warn("Unable to process station [{}]".format(station_id))
+        else:
             #otherwise update control/monitor of this station
             station.setMonitorAndControlled(
                 station_data[EntityController.KEY_MONITORED],
@@ -53,14 +54,21 @@ class VehicleNode(StationNode):
 
     def __new_station_node(self, station_id, station_data):
         
+        station = None
+        
         if station_data[EntityController.KEY_TYPE] in self.__eo_payaload_types:
-            return EoStationNode(
+            station = EoStationNode(
                 (station_id, "EO"),
                 self._vehicle_id,
                 station_id, 
                 station_data[EntityController.KEY_TYPE],
                 self._stanag_server,
                 self._cb_ui_action_request)
+        
+        if station is not None:
+            self.addChild(station)
+
+        return station
 
     def processConfigResponse(self, msg):
         pass
