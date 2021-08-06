@@ -6,6 +6,8 @@ from PyQt5.QtGui import QColor, QCursor, QIcon
 from PyQt5.QtWidgets import QAction, QMenu
 from models.base_node import BaseNode
 from models.eo_station_node import EoStationNode
+from models.lrf_station_node import LrfStationNode
+from models.mast_station_node import MastStationNode
 from models.station_node import StationNode
 from .vehicle_node import VehicleNode
 import logging
@@ -15,12 +17,16 @@ from PyQt5.QtCore import pyqtSignal
 from stanag4586edav1.message21 import Message21
 from stanag4586edav1.message20040 import Message20040
 from stanag4586vsm.stanag_server import *
-
+from stanag4586edav1.message302 import *
 
 class VehicleModel(QtCore.QAbstractItemModel):
 
+    #recognized nodes
+    _recognized_node_types = [LrfStationNode ,MastStationNode, VehicleNode, EoStationNode]
+
     #Public members
     onMastStatusReceived = pyqtSignal(Message20040)
+    onLrfStatusReceived = pyqtSignal(Message302)
     
     #Private members
     __root_node = None
@@ -112,7 +118,7 @@ class VehicleModel(QtCore.QAbstractItemModel):
         node = index.internalPointer()
         if role == QtCore.Qt.DisplayRole:
 
-            if type(node) not in [VehicleNode, EoStationNode]:
+            if type(node) not in self._recognized_node_types:
                 return node.data(index.column())
 
             if index.column() > 0:
@@ -127,7 +133,7 @@ class VehicleModel(QtCore.QAbstractItemModel):
         #     elif node.isMonitored():
         #         return QtGui.QBrush(QtCore.Qt.yellow)
 
-        if index.column() == 0 and (role==QtCore.Qt.DecorationRole) and (type(node) in [VehicleNode, EoStationNode]):
+        if index.column() == 0 and (role==QtCore.Qt.DecorationRole) and (type(node) in self._recognized_node_types):
             if node.isControlled():
                 return self._color_controlled
             elif node.isMonitored():
@@ -159,6 +165,10 @@ class VehicleModel(QtCore.QAbstractItemModel):
         elif wrapper.message_type == 20040:
             self.__logger.debug("Got Mast status ")
             self.onMastStatusReceived.emit(msg)
+
+        elif wrapper.message_type == 302:
+            self.__logger.debug("Got EO/LRF status ")
+            self.onLrfStatusReceived.emit(msg)
 
 
     
@@ -222,7 +232,7 @@ class VehicleModel(QtCore.QAbstractItemModel):
         node = self.getSelectedNode()
         if node is None: return
         
-        if type(node) in [EoStationNode, VehicleNode]:
+        if type(node) in [LrfStationNode, MastStationNode ,EoStationNode, VehicleNode]:
             self.__logger.debug("Station node clicked")
 
             #nodeContext

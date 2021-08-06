@@ -12,6 +12,8 @@ from stanag4586edav1.message_wrapper import *
 from stanag4586edav1.message20000 import *
 from stanag4586edav1.message20030 import *
 from stanag4586edav1.message20040 import *
+from stanag4586edav1.message201 import *
+from stanag4586edav1.message302 import *
 
 import time
 import asyncio
@@ -99,8 +101,66 @@ class C2EoStationWidget(Ui_Form):
         self.btnMastUp.released.connect(lambda: self.mastButtonReleased())
         self.btnMastDown.released.connect(lambda: self.mastButtonReleased())
 
+        #lrf controls
+        self.cmd_lrf_off.clicked.connect(lambda: self.sendLrfCommand(Message201.LRF_OFF))
+        self.cmd_lrf_on.clicked.connect(lambda: self.sendLrfCommand(Message201.LRF_ON_SAFE))
+        self.cmd_lrf_arm.clicked.connect(lambda: self.sendLrfCommand(Message201.LRF_ARM))
+        self.cmd_lrf_fire.clicked.connect(lambda: self.sendLrfCommand(Message201.LRF_FIRE_ONE_PULSE))
+
         #for status messages
         self._vehicle_data_model.onMastStatusReceived.connect(self.onMastStatusReceived)
+        self._vehicle_data_model.onLrfStatusReceived.connect(self.onLrfStatusReceived)
+        
+
+    ############3
+    ## LRF Related
+    def sendLrfCommand(self, cmd):
+        if self._stanag_server is None: return
+
+        msg201 = Message201(Message201.MSGNULL)
+        msg201.time_stamp = 0x00
+        msg201.vehicle_id = self._eo_node.getVehicleId()
+        msg201.cucs_id = 0xA0
+        msg201.station_number = 4
+        msg201.addressed_sensor = Message201.ADDRESSED_SENSOR_PLSPECIFIC
+        msg201.system_operating_mode = Message201.SYSTEM_OPERATING_MODE_ACTIVE
+        msg201.set_eo_sensor_mode = Message201.EO_SENSOR_MODE_COLOR
+        msg201.set_ir_polarity = Message201.IR_POLARITY_WHITE_HOT
+        msg201.image_output = Message201.IMAGE_OUTPUT_BOTH
+        msg201.set_eo_ir_pointing_mode = Message201.EO_IR_POINTING_MODE_TARGET_SLAVED
+        msg201.fire_laser_pointer = Message201.LASER_POINTER_FIRE
+
+        msg201.fire_laser_rangefinder = cmd
+        msg201.select_lrf_first_last_pulse = Message201.SELECT_LRF_PULSE_LAST
+        
+        msg201.set_laser_designator_code = 1
+        msg201.initiate_laser_designator = Message201.INIT_LASER_DESIGNATOR_FIRE
+        msg201.preplan_mode = Message201.PREPLAN_MODE_OPERATE_IN_MANUAL
+        
+        wrapper = MessageWrapper(MessageWrapper.MSGNULL)
+        encoded_msg = wrapper.wrap_message(1, 201, msg201, False)
+
+        asyncio.get_running_loop().call_soon(self._stanag_server.tx_data, encoded_msg)
+
+    def onLrfStatusReceived(self, msg):
+        lrf_state = "Off"
+        
+        if msg.fire_laser_rangefinder_status == Message302_fire_laser_rangefinder_status.ON_SAFED:
+            lrf_state = "On-Safed"
+        elif msg.fire_laser_rangefinder_status == Message302_fire_laser_rangefinder_status.ARMED:
+            lrf_state = "Armed"
+        elif msg.fire_laser_rangefinder_status == Message302_fire_laser_rangefinder_status.MASKED:
+            lrf_state = "Masked"
+        elif msg.fire_laser_rangefinder_status == Message302_fire_laser_rangefinder_status.RECHARGING:
+            lrf_state = "Recharging"
+        elif msg.fire_laser_rangefinder_status == Message302_fire_laser_rangefinder_status.FIRING:
+            lrf_state = "Firing"
+            self.lbl_lrf_range.setText("Range: {:.2f}".format(msg.reported_range))
+        else:
+            self.lbl_lrf_range.setText("Range: 0.0")
+
+        self.lbl_lrf_status.setText("State: {}".format(lrf_state))
+        
 
     #Mast related
     def onMastStatusReceived(self, msg):
@@ -140,7 +200,7 @@ class C2EoStationWidget(Ui_Form):
         msg20030.time_stamp = 0x00
         msg20030.vehicle_id = self._eo_node.getVehicleId()
         msg20030.cucs_id = 0xA0
-        msg20030.station_number = self._eo_node.getStationId()
+        msg20030.station_number = 2
         msg20030.command_type = cmd_type
         msg20030.absolute_height = absolute_height
 

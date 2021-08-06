@@ -1,6 +1,8 @@
 from PyQt5.QtWidgets import QAction
 from .station_node import StationNode
 from .eo_station_node import EoStationNode
+from .mast_station_node import MastStationNode
+from .lrf_station_node import LrfStationNode
 
 from stanag4586vsm.entity_controller import EntityController
 from stanag4586edav1.message300 import Message300
@@ -59,6 +61,24 @@ class VehicleNode(StationNode):
         if station_data[EntityController.KEY_TYPE] in self.__eo_payaload_types:
             station = EoStationNode(
                 (station_id, "EO"),
+                self._vehicle_id,
+                station_id, 
+                station_data[EntityController.KEY_TYPE],
+                self._stanag_server,
+                self._cb_ui_action_request)
+        
+        elif station_data[EntityController.KEY_TYPE] == Message300.PAYLOAD_TYPE_MAST:
+            station = MastStationNode(
+                (station_id, "Mast"),
+                self._vehicle_id,
+                station_id, 
+                station_data[EntityController.KEY_TYPE],
+                self._stanag_server,
+                self._cb_ui_action_request)
+            
+        elif station_data[EntityController.KEY_TYPE] == Message300.PAYLOAD_TYPE_LRF:
+            station = MastStationNode(
+                (station_id, "Lrf"),
                 self._vehicle_id,
                 station_id, 
                 station_data[EntityController.KEY_TYPE],
