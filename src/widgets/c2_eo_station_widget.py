@@ -155,7 +155,7 @@ class C2EoStationWidget(Ui_Form):
             lrf_state = "Recharging"
         elif msg.fire_laser_rangefinder_status == Message302_fire_laser_rangefinder_status.FIRING:
             lrf_state = "Firing"
-            self.lbl_lrf_range.setText("Range: {:.2f}".format(msg.reported_range))
+            self.lbl_lrf_range.setText("Range: {:.2f} m".format(msg.reported_range))
         else:
             self.lbl_lrf_range.setText("Range: 0.0")
 
