@@ -172,6 +172,8 @@ class C2EoStationWidget(Ui_Form):
         self.progressMastHeight.setMaximum(msg.max_height*10)
         self.progressMastHeight.setProperty("value", msg.current_height*10)
 
+        self.lbl_mast_height.setText("{:.1f} m".format(msg.current_height))
+
     def mastButtonPressed(self, direction):
         self._direction_mast = direction
         self._timer_mast.start(100)
