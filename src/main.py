@@ -138,7 +138,7 @@ async def setup_stanag_server():
     global stanag_server
 
     logger.debug("Creating server")
-    stanag_server = StanagServer(logging.DEBUG)
+    stanag_server = StanagServer(logging.INFO)
 
     await stanag_server.setup_service(loop, StanagServer.MODE_CUCS)
 

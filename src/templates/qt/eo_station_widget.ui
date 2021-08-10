@@ -54,6 +54,12 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>70</height>
+           </size>
+          </property>
           <property name="title">
            <string>Video playback controls</string>
           </property>
@@ -196,55 +202,55 @@
            </item>
           </layout>
          </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="groupBox_2">
+        <property name="title">
+         <string>LRF Controls</string>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_5">
          <item>
-          <widget class="QGroupBox" name="groupBox_2">
-           <property name="title">
-            <string>LRF Controls</string>
+          <widget class="QLabel" name="lbl_lrf_status">
+           <property name="text">
+            <string>State: Off</string>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_5">
-            <item>
-             <widget class="QLabel" name="lbl_lrf_status">
-              <property name="text">
-               <string>State: Off</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="lbl_lrf_range">
-              <property name="text">
-               <string>Range: 0.0m</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="cmd_lrf_off">
-              <property name="text">
-               <string>Power Off</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="cmd_lrf_on">
-              <property name="text">
-               <string>Power On</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="cmd_lrf_arm">
-              <property name="text">
-               <string>Arm</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="cmd_lrf_fire">
-              <property name="text">
-               <string>Fire</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="lbl_lrf_range">
+           <property name="text">
+            <string>Range: 0.0m</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="cmd_lrf_off">
+           <property name="text">
+            <string>Power Off</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="cmd_lrf_on">
+           <property name="text">
+            <string>Power On</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="cmd_lrf_arm">
+           <property name="text">
+            <string>Arm</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="cmd_lrf_fire">
+           <property name="text">
+            <string>Fire</string>
+           </property>
           </widget>
          </item>
         </layout>

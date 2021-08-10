@@ -43,7 +43,7 @@ class VehicleModel(QtCore.QAbstractItemModel):
     def __init__(self, stanag_server, cb_ui_action_request, nodes = None):
         
         self.__logger = logging.getLogger("VehicleModel")
-        self.__logger.setLevel(logging.DEBUG)
+        self.__logger.setLevel(logging.CRITICAL)
 
         self._cb_ui_action_request = cb_ui_action_request
 
