@@ -12,6 +12,7 @@ from stanag4586edav1.message_wrapper import *
 from stanag4586edav1.message20000 import *
 from stanag4586edav1.message20030 import *
 from stanag4586edav1.message20040 import *
+from stanag4586edav1.message200 import *
 from stanag4586edav1.message201 import *
 from stanag4586edav1.message302 import *
 
@@ -28,8 +29,11 @@ class C2EoStationWidget(Ui_Form):
     _eo_node = None
     _timer_ptz = None
     _timer_mast = None
+    _timer_zoom = None
+    
     _direction_ptz = UP
     _direction_mast = UP
+    _cmd_zoom = Message200.SET_ZOOM_STOP_ZOOM
 
     _stanag_server = None
     
@@ -46,6 +50,9 @@ class C2EoStationWidget(Ui_Form):
 
         self._timer_mast = QTimer()
         self._timer_mast.timeout.connect(self.timer_mast_timedout)
+
+        self._timer_zoom = QTimer()
+        self._timer_zoom.timeout.connect(self.timer_zoom_timeout)
 
         self.setupMediaPlayer()
         self.setupSlots()
@@ -107,12 +114,73 @@ class C2EoStationWidget(Ui_Form):
         self.cmd_lrf_arm.clicked.connect(lambda: self.sendLrfCommand(Message201.LRF_ARM))
         self.cmd_lrf_fire.clicked.connect(lambda: self.sendLrfCommand(Message201.LRF_FIRE_ONE_PULSE))
 
+        #zoom controls
+        self.cmd_zoom_in.clicked.connect(lambda: self.zoomInOnce())
+        self.cmd_zoom_out.clicked.connect(lambda: self.zoomOutOnce())
+
+        self.cmd_zoom_in.pressed.connect(lambda: self.sendRepeatZoomCmd(Message200.SET_ZOOM_ZOOM_IN))
+        self.cmd_zoom_out.pressed.connect(lambda: self.sendRepeatZoomCmd(Message200.SET_ZOOM_ZOOM_OUT))
+
+        self.cmd_zoom_in.released.connect(lambda: self.sendRepeatZoomCmd(Message200.SET_ZOOM_STOP_ZOOM))
+        self.cmd_zoom_out.released.connect(lambda: self.sendRepeatZoomCmd(Message200.SET_ZOOM_STOP_ZOOM))
+
         #for status messages
         self._vehicle_data_model.onMastStatusReceived.connect(self.onMastStatusReceived)
         self._vehicle_data_model.onLrfStatusReceived.connect(self.onLrfStatusReceived)
-        
+    
+    #############
+    ## Zoom Related
+    def zoomInOnce(self):
+        #take last known zoom value, add/subract and send cmd through sendzoomcmdutil
+        pass
 
-    ############3
+    def zoomOutOnce(self):
+        pass
+
+    def zoomStop(self):
+        self._cmd_zoom = Message200.SET_ZOOM_STOP_ZOOM
+        self.sendZoomCmd()
+
+    def sendRepeatZoomCmd(self, cmd):
+        self._cmd_zoom = cmd
+
+        if cmd == Message200.SET_ZOOM_STOP_ZOOM:
+            self._timer_zoom.stop()
+            self.zoomStop()    
+        else:
+            self._timer_zoom.start(100)
+
+    def timer_zoom_timeout(self):
+        self.sendZoomCmd()
+
+    def sendZoomCmd(self):
+        
+        msg200 = Message200(Message200.MSGNULL)
+
+        msg200.time_stamp = 0x00
+        msg200.vehicle_id = self._eo_node.getVehicleId()
+        msg200.cucs_id = 0xA0
+        msg200.station_number = self._eo_node.getStationId()
+        msg200.set_centreline_azimuth_angle = -1000.0
+        msg200.set_centreline_elevation_angle = -1000.0
+        msg200.set_zoom = self._cmd_zoom
+        msg200.set_horizontal_fov = 0.05
+        msg200.set_vertical_fov = 0.05
+        msg200.horizontal_slew_rate = 0.0
+        msg200.vertical_slew_rate = 0.0
+        msg200.latitude = 0.0
+        msg200.longitude = 0.0
+        msg200.altitude = 0.0
+        msg200.altitude_type = Message200.ALTITUDE_TYPE_AGL
+        msg200.set_focus = 1
+        msg200.focus_type = Message200.FOCUS_TYPE_MANUAL
+
+        wrapper = MessageWrapper(MessageWrapper.MSGNULL)
+        encoded_msg = wrapper.wrap_message(1, 200, msg200, False)
+
+        asyncio.get_running_loop().call_soon(self._stanag_server.tx_data, encoded_msg)
+
+    #############
     ## LRF Related
     def sendLrfCommand(self, cmd):
         if self._stanag_server is None: return
