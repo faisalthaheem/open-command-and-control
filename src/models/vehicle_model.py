@@ -26,7 +26,7 @@ class VehicleModel(QtCore.QAbstractItemModel):
 
     #Public members
     onMastStatusReceived = pyqtSignal(Message20040)
-    onLrfStatusReceived = pyqtSignal(Message302)
+    onEoLrfStatusReceived = pyqtSignal(Message302)
     
     #Private members
     __root_node = None
@@ -168,7 +168,7 @@ class VehicleModel(QtCore.QAbstractItemModel):
 
         elif wrapper.message_type == 302:
             self.__logger.debug("Got EO/LRF status ")
-            self.onLrfStatusReceived.emit(msg)
+            self.onEoLrfStatusReceived.emit(msg)
 
 
     

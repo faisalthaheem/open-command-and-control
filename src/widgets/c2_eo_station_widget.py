@@ -36,6 +36,8 @@ class C2EoStationWidget(Ui_Form):
     _cmd_zoom = Message200.SET_ZOOM_STOP_ZOOM
 
     _stanag_server = None
+
+    _last_known_zoom = 0.05
     
     def __init__(self, parent=None, eo_node=None, stanag_server=None, vehicle_data_model=None):
         
@@ -74,6 +76,7 @@ class C2EoStationWidget(Ui_Form):
 
         media_uri = "gst-pipeline: rtspsrc location={} latency=0 ! rtph264depay ! avdec_h264 ! videoconvert ! ximagesink name=qtvideosink".format(self._eo_node.getMediaUri())
         self._player.setMedia(QMediaContent(QUrl(media_uri)))
+        self._player.play()
 
     def setupSlots(self):
 
@@ -126,16 +129,21 @@ class C2EoStationWidget(Ui_Form):
 
         #for status messages
         self._vehicle_data_model.onMastStatusReceived.connect(self.onMastStatusReceived)
-        self._vehicle_data_model.onLrfStatusReceived.connect(self.onLrfStatusReceived)
+        self._vehicle_data_model.onEoLrfStatusReceived.connect(self.onEoLrfStatusReceived)
     
     #############
     ## Zoom Related
     def zoomInOnce(self):
         #take last known zoom value, add/subract and send cmd through sendzoomcmdutil
-        pass
+        if self._last_known_zoom - 0.05 >= 0.05:
+            self._cmd_zoom = Message200.SET_ZOOM_USE_HV_FOV
+            self.sendZoomCmd(self._last_known_zoom - 0.05)
+
 
     def zoomOutOnce(self):
-        pass
+        if self._last_known_zoom + 0.05 < 3.14:
+            self._cmd_zoom = Message200.SET_ZOOM_USE_HV_FOV
+            self.sendZoomCmd(self._last_known_zoom + 0.05)
 
     def zoomStop(self):
         self._cmd_zoom = Message200.SET_ZOOM_STOP_ZOOM
@@ -153,19 +161,27 @@ class C2EoStationWidget(Ui_Form):
     def timer_zoom_timeout(self):
         self.sendZoomCmd()
 
-    def sendZoomCmd(self):
+    def sendZoomCmd(self, h_fov_to_set = 0.05):
         
         msg200 = Message200(Message200.MSGNULL)
 
+        # Zoom specific fields
+        msg200.set_zoom = self._cmd_zoom
+
+        if self._cmd_zoom != Message200.SET_ZOOM_USE_HV_FOV:
+            msg200.set_horizontal_fov = 0.05
+            msg200.set_vertical_fov = 0.05
+        else:
+            msg200.set_horizontal_fov = h_fov_to_set
+            msg200.set_vertical_fov = 0.05
+
+        # Other fields
         msg200.time_stamp = 0x00
         msg200.vehicle_id = self._eo_node.getVehicleId()
         msg200.cucs_id = 0xA0
         msg200.station_number = self._eo_node.getStationId()
         msg200.set_centreline_azimuth_angle = -1000.0
         msg200.set_centreline_elevation_angle = -1000.0
-        msg200.set_zoom = self._cmd_zoom
-        msg200.set_horizontal_fov = 0.05
-        msg200.set_vertical_fov = 0.05
         msg200.horizontal_slew_rate = 0.0
         msg200.vertical_slew_rate = 0.0
         msg200.latitude = 0.0
@@ -210,25 +226,32 @@ class C2EoStationWidget(Ui_Form):
 
         asyncio.get_running_loop().call_soon(self._stanag_server.tx_data, encoded_msg)
 
-    def onLrfStatusReceived(self, msg):
-        lrf_state = "Off"
-        
-        if msg.fire_laser_rangefinder_status == Message302_fire_laser_rangefinder_status.ON_SAFED:
-            lrf_state = "On-Safed"
-        elif msg.fire_laser_rangefinder_status == Message302_fire_laser_rangefinder_status.ARMED:
-            lrf_state = "Armed"
-        elif msg.fire_laser_rangefinder_status == Message302_fire_laser_rangefinder_status.MASKED:
-            lrf_state = "Masked"
-        elif msg.fire_laser_rangefinder_status == Message302_fire_laser_rangefinder_status.RECHARGING:
-            lrf_state = "Recharging"
-        elif msg.fire_laser_rangefinder_status == Message302_fire_laser_rangefinder_status.FIRING:
-            lrf_state = "Firing"
-            self.lbl_lrf_range.setText("Range: {:.2f} m".format(msg.reported_range))
-        else:
-            self.lbl_lrf_range.setText("Range: 0.0")
+    def onEoLrfStatusReceived(self, msg):
 
-        self.lbl_lrf_status.setText("State: {}".format(lrf_state))
+        #msg may be for ptz status
+        if msg.reported_range >= 0.0:
+
+            lrf_state = "Off"
+            
+            if msg.fire_laser_rangefinder_status == Message302_fire_laser_rangefinder_status.ON_SAFED:
+                lrf_state = "On-Safed"
+            elif msg.fire_laser_rangefinder_status == Message302_fire_laser_rangefinder_status.ARMED:
+                lrf_state = "Armed"
+            elif msg.fire_laser_rangefinder_status == Message302_fire_laser_rangefinder_status.MASKED:
+                lrf_state = "Masked"
+            elif msg.fire_laser_rangefinder_status == Message302_fire_laser_rangefinder_status.RECHARGING:
+                lrf_state = "Recharging"
+            elif msg.fire_laser_rangefinder_status == Message302_fire_laser_rangefinder_status.FIRING:
+                lrf_state = "Firing"
+                self.lbl_lrf_range.setText("Range: {:.2f} m".format(msg.reported_range))
+            else:
+                self.lbl_lrf_range.setText("Range: 0.0")
+
+            self.lbl_lrf_status.setText("State: {}".format(lrf_state))
         
+        if msg.actual_horizontal_field_of_view != -1000.0:
+            self._last_known_zoom = msg.actual_horizontal_field_of_view
+            self.lbl_zoom_status.setText("{:.2f}".format(msg.actual_horizontal_field_of_view))
 
     #Mast related
     def onMastStatusReceived(self, msg):
