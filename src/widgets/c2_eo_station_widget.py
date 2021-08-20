@@ -120,12 +120,13 @@ class C2EoStationWidget(Ui_Form):
         #zoom controls
         self.cmd_zoom_in.clicked.connect(lambda: self.zoomInOnce())
         self.cmd_zoom_out.clicked.connect(lambda: self.zoomOutOnce())
+        
 
-        self.cmd_zoom_in.pressed.connect(lambda: self.sendRepeatZoomCmd(Message200.SET_ZOOM_ZOOM_IN))
-        self.cmd_zoom_out.pressed.connect(lambda: self.sendRepeatZoomCmd(Message200.SET_ZOOM_ZOOM_OUT))
+        self.cmd_zoom_in_repeated.pressed.connect(lambda: self.sendRepeatZoomCmd(Message200.SET_ZOOM_ZOOM_IN))
+        self.cmd_zoom_out_repeated.pressed.connect(lambda: self.sendRepeatZoomCmd(Message200.SET_ZOOM_ZOOM_OUT))
 
-        self.cmd_zoom_in.released.connect(lambda: self.sendRepeatZoomCmd(Message200.SET_ZOOM_STOP_ZOOM))
-        self.cmd_zoom_out.released.connect(lambda: self.sendRepeatZoomCmd(Message200.SET_ZOOM_STOP_ZOOM))
+        self.cmd_zoom_in_repeated.released.connect(lambda: self.sendRepeatZoomCmd(Message200.SET_ZOOM_STOP_ZOOM))
+        self.cmd_zoom_out_repeated.released.connect(lambda: self.sendRepeatZoomCmd(Message200.SET_ZOOM_STOP_ZOOM))
 
         #for status messages
         self._vehicle_data_model.onMastStatusReceived.connect(self.onMastStatusReceived)
