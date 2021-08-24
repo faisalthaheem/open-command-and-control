@@ -4,3 +4,5 @@ The project is in it's initial stages and works in conjunction with https://gith
 
 ![Initial version](docs/screenshots/open-command-and-control-v2.gif?raw=true "Open C2")
 Initial version of open c2 with support for discover, monitor and control of STANAG 4586 compliant vehicles. Allows operating EO (electro optic) payloads normally found on the UGV (unmanned ground vehicle).
+
+Minimial version of C2.
