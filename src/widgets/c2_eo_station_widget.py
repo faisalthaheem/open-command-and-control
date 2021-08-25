@@ -206,7 +206,7 @@ class C2EoStationWidget(Ui_Form):
         msg201.time_stamp = 0x00
         msg201.vehicle_id = self._eo_node.getVehicleId()
         msg201.cucs_id = 0xA0
-        msg201.station_number = 4
+        msg201.station_number = 4 #todo - get station id from model
         msg201.addressed_sensor = Message201.ADDRESSED_SENSOR_PLSPECIFIC
         msg201.system_operating_mode = Message201.SYSTEM_OPERATING_MODE_ACTIVE
         msg201.set_eo_sensor_mode = Message201.EO_SENSOR_MODE_COLOR
@@ -294,7 +294,7 @@ class C2EoStationWidget(Ui_Form):
         msg20030.time_stamp = 0x00
         msg20030.vehicle_id = self._eo_node.getVehicleId()
         msg20030.cucs_id = 0xA0
-        msg20030.station_number = 2
+        msg20030.station_number = 2 #todo - get station id from model
         msg20030.command_type = cmd_type
         msg20030.absolute_height = absolute_height
 
